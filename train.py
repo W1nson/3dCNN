@@ -89,17 +89,20 @@ def main():
     scheduler = lr_scheduler.StepLR(optimizer, step_size=args.decay_iter, gamma=args.decay_rate)
     
     if args.train:
-
+        
+        print("loading training data") 
         train_data = Dataset_ligand(df=df, types='train', sigma=args.sigma)
         train_dataloader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
         
         if args.eval: 
+            print("loading validation data") 
             val_data = Dataset_ligand(df=df, types='val', sigma=args.sigma) 
             val_dataloader = DataLoader(val_data, batch_size=args.batch_size, shuffle=True) 
 
 
         min_loss = float('inf')
-        step = 0 
+        step = 0
+        print("start training") 
         for epoch_ind in range(args.epoch_count):
             model.train()
             losses = []
@@ -176,21 +179,26 @@ def main():
     
     if args.test: 
         
-         
+        print("loading test set")  
         test_data = Dataset_ligand(df=df, types='test', sigma=args.sigma)
         test_dataloader = DataLoader(test_data, batch_size=args.batch_size) 
     
+
+            
+        print("loading model") 
         checkpoint = torch.load(args.model_path, map_location=device)
         
-        model_to_save = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda)
+        model = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda)
         model_state_dict = checkpoint.pop("model_state_dict")
-        model_to_save.load_state_dict(model_state_dict, strict=False)
-        
+        model.load_state_dict(model_state_dict, strict=False)
+        model.to(device)
+
         pred_list = [] 
         test_losses = [] 
         model.eval()
+        print("start testing") 
         bar = tqdm(test_dataloader) 
-        avg_loss = 0 
+        avg_loss = 0
         with torch.no_grad(): 
             for batch_ind, batch in enumerate(bar): 
                 x, y = batch 
@@ -198,9 +206,9 @@ def main():
                 prob, ypred_batch, _ = model(x_gpu)
 
                 
-                print(prob.shape) 
-                for i in range(args.batch_size):
-                    pred_list.append([batch_ind+ i, y[i], torch.argmax(prob[i])])
+                # print(prob.shape) 
+                for i in range(prob.shape[0]):
+                    pred_list.append([str(batch_ind+ i), str(y[i]), str(torch.argmax(prob[i]))])
 
                 # loss = loss_fn(ypred_batch.cpu(), y.long()) 
 
