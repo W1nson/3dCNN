@@ -13,6 +13,8 @@ import random
 from model import model_3DCNN 
 from data_util import * 
 import argparse
+from sklearn.metrics import f1_score, recall_score, precision_score
+
 
 def set_seed(seed=42): 
     
@@ -60,7 +62,9 @@ def main():
 
     use_cuda = torch.cuda.is_available()
     cuda_count = torch.cuda.device_count()
-    device = torch.device(args.device_name)
+    device = torch.device('cpu') 
+    if use_cuda: 
+        device = torch.device(args.device_name)
     
     
     file_name = 'mpro_exp_data2_rdkit_feat.csv'
@@ -71,17 +75,17 @@ def main():
     df = df.drop_duplicates(subset="smiles", keep="first")
 
 
-
     
-    # [16, 19, 48, 48, 48]
-    
+    # [16, 19, 48, 48, 48] for model summary 
     model = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda)
      
     if use_cuda: 
         model.to(device)
     summary(model, (19, 48, 48, 48))
     
-   
+    # create new model just in case 
+    model = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda) 
+    model.to(device) 
 
 
     optimizer = Adam(model.parameters(), lr=args.learning_rate)
@@ -193,7 +197,9 @@ def main():
         model.load_state_dict(model_state_dict, strict=False)
         model.to(device)
 
-        pred_list = [] 
+        pred_list = []
+        y_true = [] 
+        y_pred = []
         test_losses = [] 
         model.eval()
         print("start testing") 
@@ -205,24 +211,24 @@ def main():
                 x_gpu = x.to(device)
                 prob, ypred_batch, _ = model(x_gpu)
 
-                
-                # print(prob.shape) 
                 for i in range(prob.shape[0]):
-                    pred_list.append([str(batch_ind+ i), str(y[i]), str(torch.argmax(prob[i]))])
-
-                # loss = loss_fn(ypred_batch.cpu(), y.long()) 
-
-                # test_losses.append(loss.cpu().data.item()) 
-               
-                # bar.set_description("validation epoch %d loss %.3f" % (epoch_ind+1, loss))
-                # avg_loss = np.mean(test_losses)  
-        # print("test, loss: %.3f" % ( avg_loss))
+                    pred_list.append([str(batch_ind*prob.shape[0]+ i), str(y[i].item()), str(torch.argmax(prob[i].cpu()).item())])
+                    y_true.append(y[i].item())
+                    y_pred.append(torch.argmax(prob[i].cpu()).item())
+           
 
         
         with open(os.path.join(args.output_path, 'predictions.txt'), 'w') as f: 
             for i in pred_list: 
                 f.write('\t'.join(i) + '\n') 
 
+        f1 = f1_score(y_true, y_pred) 
+        precision = precision_score(y_true, y_pred) 
+        recall = recall_score(y_true, y_pred) 
+        
+        print('f1: %.3f' % f1) 
+        print('precision: %.3f' % precision)
+        print('recall: %.3f' % recall) 
 
         test_data.close() 
 
