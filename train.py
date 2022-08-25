@@ -182,6 +182,7 @@ def main():
     
         checkpoint = torch.load(args.model_path, map_location=device)
         
+        model_to_save = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda)
         model_state_dict = checkpoint.pop("model_state_dict")
         model_to_save.load_state_dict(model_state_dict, strict=False)
         
