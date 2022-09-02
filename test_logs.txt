@@ -69,8 +69,6 @@ try dropout on network
     - lr = 5e-4
     - batch size = 16 
 
-    - f1 =  
-    - precision = 
-    - recall = 
-
-
+    f1: 0.461
+    precision: 0.477
+    recdall: 0.446

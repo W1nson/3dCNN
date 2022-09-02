@@ -78,7 +78,7 @@ def main():
     
     # [16, 19, 48, 48, 48] for model summary 
     model = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda, output_dim=2, num_filters=num_filters)
-     
+    
     if use_cuda: 
         model.to(device)
     print(summary(model, (19, 48, 48, 48)))
@@ -194,7 +194,7 @@ def main():
         print("***** Loading Model *****") 
         checkpoint = torch.load(args.model_path, map_location=device)
         
-        model = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda)
+        model = model_3DCNN(verbose=args.verbose, use_cuda=use_cuda, output_dim=2, num_filters=num_filters)
         model_state_dict = checkpoint.pop("model_state_dict")
         model.load_state_dict(model_state_dict, strict=False)
         model.to(device)
